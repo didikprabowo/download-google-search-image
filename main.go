@@ -134,11 +134,15 @@ func fetchImage(url string, client *http.Client, keyword string, fileName int) {
 	defer res.Body.Close()
 
 	if res.StatusCode == 200 {
-		os.MkdirAll(keyword, os.ModePerm)
+		os.MkdirAll("images/"+keyword, os.ModePerm)
 		extensi := strings.Split(url, ".")
 		newEkstenstion := extensi[len(extensi)-1]
 
-		fileName := fmt.Sprintf("%v/%v.%v", keyword, fileName, newEkstenstion)
+		fileName := fmt.Sprintf("images/%v/%v.%v", keyword, fileName, newEkstenstion)
+
+		if strings.Contains(fileName, ".com") {
+			recover()
+		}
 		file, err := os.Create(fileName)
 
 		if err != nil {
@@ -149,12 +153,11 @@ func fetchImage(url string, client *http.Client, keyword string, fileName int) {
 		_, err = io.Copy(file, res.Body)
 
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(err)
 		}
 
 		fmt.Printf("*Successfuly download image to Path : %v \n", fileName)
 	}
-
 }
 
 func main() {
