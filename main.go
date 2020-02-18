@@ -17,12 +17,13 @@ import (
 )
 
 type (
+	// ConfHttp
 	ConfHttp struct {
 		MaxIdleConnts      int
 		IdleConnTimeout    time.Duration
 		DisableCompression bool
 	}
-
+	// ImageOi
 	ImageOi struct {
 		URLImage string
 		URL      string
@@ -31,8 +32,8 @@ type (
 
 var (
 	fileName string
-	page     int
 	keyword  = kingpin.Flag("keyword", "Name of keyword.").Required().String()
+	maxPage  = 20
 )
 
 // NewConfig
@@ -126,6 +127,12 @@ func getURLPage(cImg <-chan ImageOi, c *http.Client, urlImage chan string) {
 // fetchImage
 func fetchImage(url string, client *http.Client, keyword string, fileName int) {
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Panic: %+v\n", r)
+		}
+	}()
+
 	res, err := client.Get(url)
 
 	if err != nil {
@@ -136,13 +143,15 @@ func fetchImage(url string, client *http.Client, keyword string, fileName int) {
 	if res.StatusCode == 200 {
 		os.MkdirAll("images/"+keyword, os.ModePerm)
 		extensi := strings.Split(url, ".")
-		newEkstenstion := extensi[len(extensi)-1]
+		newEkstenstion := "." + extensi[len(extensi)-1]
 
-		fileName := fmt.Sprintf("images/%v/%v.%v", keyword, fileName, newEkstenstion)
-
-		if strings.Contains(fileName, ".com") {
-			recover()
+		if !(newEkstenstion == ".jpg" || newEkstenstion == ".png" || newEkstenstion == ".svg" ||
+			newEkstenstion == ".jpeg") {
+			newEkstenstion = ""
 		}
+
+		fileName := fmt.Sprintf("images/%v/%v%v", keyword, fileName, newEkstenstion)
+
 		file, err := os.Create(fileName)
 
 		if err != nil {
@@ -155,12 +164,12 @@ func fetchImage(url string, client *http.Client, keyword string, fileName int) {
 		if err != nil {
 			fmt.Println(err)
 		}
-
 		fmt.Printf("*Successfuly download image to Path : %v \n", fileName)
 	}
 }
 
 func main() {
+	var page int
 
 	kingpin.Parse()
 
@@ -179,7 +188,7 @@ func main() {
 	cfg := NewConfig(c)
 	client := cfg.NewHttp()
 	go func() {
-		for i := 0; i < 10; i++ {
+		for i := 0; i < maxPage; i++ {
 			if i == 0 {
 				page = 0
 			} else {
